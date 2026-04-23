@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="RTranslator.Components.TextBoxDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Style="{ThemeResource DefaultContentDialogStyle}"
+    mc:Ignorable="d">
+
+    <StackPanel>
+        <TextBlock
+            Text="{x:Bind Text}"/>
+        <TextBox x:Name="TbxProjectName"
+            PlaceholderText="{x:Bind PlaceHolder}"/>
+    </StackPanel>
+</ContentDialog>

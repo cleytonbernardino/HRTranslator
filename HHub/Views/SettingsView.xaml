@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="HHub.Views.SettingsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    mc:Ignorable="d">
+
+    <!--#region Ressource-->
+    <Page.Resources>
+        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+        <Thickness x:Key="SettingsExpanderItemsCardMargin">0, 2, 0, 0</Thickness>
+
+        <Style
+            x:Key="SettingsSectionHeaderTextBlockStyle"
+            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+            TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="Margin" Value="1,30,0,6" />
+            </Style.Setters>
+        </Style>
+    </Page.Resources>
+    <!--#endregion-->
+
+    <StackPanel
+        Padding="40, 30">
+        <TextBlock x:Uid="/HHubResources/SETTINGS"
+            Style="{StaticResource TitleTextBlockStyle}"/>
+
+        <StackPanel>
+            <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                Text="Idiomas"/>
+
+            <controls:SettingsExpander x:Uid="/HHubResources/SELECT_LANG"
+                                       IsExpanded="True">
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard x:Uid="/HHubResources/SOURCE_LANG"
+                                           Margin="{StaticResource SettingsExpanderItemsCardMargin}">
+                        <ComboBox x:Name="Cbx_LangSrc"
+                                  ItemsSource="{x:Bind ViewModel.Languages}"
+                                  SelectedItem="{x:Bind ViewModel.Sett.SrcLang, Mode=TwoWay}"/>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Uid="/HHubResources/TARGET_LANG"
+                                           Margin="{StaticResource SettingsExpanderItemsCardMargin}">
+                        <ComboBox x:Name="Cbx_LangDst"
+                                  ItemsSource="{x:Bind ViewModel.Languages}"
+                                  SelectedItem="{x:Bind ViewModel.Sett.DstLang, Mode=TwoWay}"/>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
+        </StackPanel>
+
+        <StackPanel>
+            <TextBlock/>
+
+            <controls:SettingsCard Header="Modo de Backup">
+                <ComboBox ItemsSource="{x:Bind ViewModel.QuestModes}"
+                          SelectedItem="{x:Bind ViewModel.Sett.BackupMode}"
+                          SelectionChanged="BackupMode_SelectionChanged"/>
+            </controls:SettingsCard>
+
+            <controls:SettingsCard Header="Generate Cache">
+                <ComboBox ItemsSource="{x:Bind ViewModel.QuestModes}"
+              SelectedItem="{x:Bind ViewModel.Sett.GenerateCache}"
+              SelectionChanged="CacheMode_SelectionChanged"/>
+            </controls:SettingsCard>
+        </StackPanel>
+        
+        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+            <TextBlock x:Uid="/HHubResources/DIRECTORIES"/>
+
+            <controls:SettingsCard x:Uid="/HHubResources/USE_DICTIONARIES">
+                <ToggleSwitch IsOn="{x:Bind ViewModel.Sett.UseDic, Mode=TwoWay}"/>
+            </controls:SettingsCard>
+        </StackPanel>
+
+    </StackPanel>
+</Page>

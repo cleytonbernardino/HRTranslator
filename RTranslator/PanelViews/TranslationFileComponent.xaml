@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="RTranslator.PanelView.TranslationFileComponent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:converters="using:CommunityToolkit.WinUI.Converters"
+    xmlns:components="using:RTranslator.Components"
+    xmlns:models="using:RTranslator.Models"
+    mc:Ignorable="d">
+
+    <!--#region Resources-->
+    <Page.Resources>
+
+        <Thickness x:Key="CardDefaultExternalPadding">36</Thickness>
+
+        <!--#region Converter Declaration-->
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:BoolNegationConverter x:Key="BoolNegationConverter"/>
+        <!--#endregion-->
+        
+        <!--#region Translation File ListView Context Menu-->
+        <MenuFlyout x:Key="MenuFlyoutListView">
+            <MenuFlyoutItem x:Uid="\RTranslator\RTResources\TEXT_COPY" Click="MenuCopyText_Click"/>
+            <MenuFlyoutItem x:Uid="\RTranslator\RTResources\TEXT_COPY_ORIGINAL" Click="MenuCopyOriginalText_Click"/>
+        </MenuFlyout>
+        <!--#endregion-->
+        
+        <!--#region Translation File Line Template -->
+        <DataTemplate x:Name="TranslateFileItem" x:DataType="models:Dialogue">
+            <StackPanel
+                Padding="10"
+                Margin="0, 0, 0, 5"
+                ContextFlyout="{StaticResource MenuFlyoutListView}">
+                <StackPanel
+                    Orientation="Vertical">
+                    <Grid
+                        ColumnDefinitions="*, *">
+                        <StackPanel
+                            Grid.Column="0"
+                            Spacing="10"
+                            Orientation="Horizontal">
+                            <Border
+                                BorderBrush="{StaticResource AccentAAFillColorTertiaryBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                VerticalAlignment="Center"
+                                Padding="5">
+                                <TextBlock
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind Line}"/>
+                            </Border>
+                            <TextBlock
+                                Text="{x:Bind Person}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1"
+                                    HorizontalAlignment="Right"
+                                    Orientation="Horizontal">
+                            <Button Click="BtnRestoreDialogue_Click">
+                                <FontIcon Glyph="&#xE7A7;"/>
+                            </Button>
+                            <Button x:Uid="\RTranslator\RTResources\BTN_TRANSLATE"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Click="BtbTranslate_Click"/>
+                            <DropDownButton>
+                                <DropDownButton.Content>
+                                    <FontIcon Glyph="&#xE712;"/>
+                                </DropDownButton.Content>
+                                <DropDownButton.Flyout>
+                                    <MenuFlyout Placement="Bottom">
+                                        <MenuFlyoutItem x:Uid="\RTranslator\RTResources\TEXT_UPPERCASE"
+                                                        Icon="{ui:FontIcon Glyph=&#xE84B;}"
+                                                        Click="BtnUppercase_Click"/>
+                                    </MenuFlyout>
+                                </DropDownButton.Flyout>
+                            </DropDownButton>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="Original"/>
+                    <TextBlock
+                        Margin="0, 0, 0, 5"
+                        Text="{x:Bind Original}"/>
+                    <TextBlock
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="Novo Texto"/>
+                    <TextBox
+                        Text="{x:Bind New, Mode=TwoWay}"
+                        LostFocus="TbxDialogue_LostFocus"/>
+                </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+        <!--#endregion-->
+        
+    </Page.Resources>
+    <!--#endregion-->
+
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="KeyboardAccelerator_Invoked_1"/>
+    </Page.KeyboardAccelerators>
+    
+    <Grid
+        Padding="{StaticResource CardDefaultExternalPadding}">
+        <Grid.RowDefinitions>
+            <RowDefinition>Auto</RowDefinition>
+            <RowDefinition>*</RowDefinition>
+        </Grid.RowDefinitions>
+
+        <!--#region List of Dialogues Header-->
+
+        <StackPanel
+            Grid.Row="0"
+            BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
+            BorderThickness="0, 0, 0, 2"
+            Padding="10"
+            Orientation="Vertical">
+            <StackPanel
+                Orientation="Vertical">
+                <Grid
+                    ColumnDefinitions="*, *">
+
+                    <TextBlock
+                        Grid.Column="0"
+                        Style="{ThemeResource TitleTextBlockStyle}"
+                        Text="Editor de Dialogos"/>
+                    <StackPanel
+                        Grid.Column="1"
+                        HorizontalAlignment="Right"
+                        Spacing="10"
+                        Orientation="Horizontal">
+                        <!--#region App Bar Components-->
+                        <AppBarButton x:Uid="\RTranslator\RTResources\APPBAR_CANCEL"
+                                      Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                      Icon="Cancel"
+                                      Foreground="Red"
+                                      Click="BtnCancelTranslation_Click"/>
+                        <AppBarSeparator
+                            />
+                        <AppBarButton x:Uid="\RTranslator\RTResources\APPBAR_OPEN_FILE"
+                                      Icon="OpenFile"
+                                      Click="BtnOpenFile_Click"/>
+                        <AppBarSeparator
+                            />
+                        <AppBarButton x:Uid="\RTranslator\RTResources\TRANSLATE_ALL_APPBAR" 
+                                      IsEnabled="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}"
+                                      Icon="{ui:FontIcon Glyph=&#xF2B7;}"
+                                      Click="BtnTranslateAll_Click"/>
+                        <AppBarSeparator
+                            />
+                        <AppBarButton x:Uid="\RTranslator\RTResources\SAVE_APPBAR"
+                                      IsEnabled="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}"
+                                      Icon="Save"
+                                      Click="BtnSaveFile_Click">
+                            <AppBarButton.KeyboardAccelerators>
+                                <KeyboardAccelerator Modifiers="Control" Key="S"/>
+                            </AppBarButton.KeyboardAccelerators>
+                        </AppBarButton>
+                        <AppBarSeparator
+                            />
+                        <AppBarButton Label="Salvar Cache"
+                                      IsEnabled="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}"
+                                      Icon="{ui:FontIcon Glyph=&#xE89B;}"
+                                      Click="BtnSaveCache_Click"/>
+                        <AppBarSeparator
+                            />
+                        <AppBarButton Label="Ler Cache"
+                            IsEnabled="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}"
+                            Icon="{ui:FontIcon Glyph=&#xE89B;}"
+                            Click="BtnReadCache_Click"/>
+                        <!--#endregion-->
+                    </StackPanel>
+                </Grid>
+                <TextBlock
+                    Style="{StaticResource CaptionTextBlockStyle}">
+                    <Run Text="{x:Bind ViewModel.DialogueProcess, Mode=OneWay}"/>
+                    <Run x:Uid="\RTranslator\RTResources\TEXT_OF"/>
+                    <Run Text="{x:Bind ViewModel.DialoguesMax, Mode=OneWay}"/>
+                    <Run x:Uid="\RTranslator\RTResources\TEXT_DIALOGUE_TRANSLATED"/>
+                </TextBlock>
+
+                <Grid
+                    ColumnDefinitions="*, *"
+                    Margin="0, 10, 0, 0">
+                    <TextBlock
+                        Grid.Column="0"
+                        Text="Progresso da tradução"/>
+                    <TextBlock
+                        Grid.Column="1"
+                        Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                        HorizontalAlignment="Right"
+                        FontWeight="Bold">
+                        <Run Text="{x:Bind ViewModel.PorcentDialoguesTranslated, Mode=OneWay}"/>
+                        <Run Text="%"/>
+                    </TextBlock>
+                </Grid>
+
+                <ProgressBar
+                    x:Name="Pgb_Dialogues"
+                    Maximum="{x:Bind ViewModel.DialoguesMax, Mode=OneWay}"
+                    Value="{x:Bind ViewModel.DialogueProcess, Mode=OneWay}"/>
+                <Grid
+                    ColumnDefinitions="*, Auto" ColumnSpacing="8"
+                    RowDefinitions="*, *" RowSpacing="12"
+                    Margin="0, 15, 0, 0">
+                    <controls:TokenView Grid.Column="0" Grid.ColumnSpan="2"
+                                        Grid.Row="0"
+                                        x:Name="Tkv_SearchTokens"
+                                        SelectionChanged="Tkv_SearchTokens_SelectionChanged"
+                                        SelectionMode="Multiple">
+                        <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_TRANSLATED"
+                                            Icon="{ui:FontIcon Glyph=&#xF085;}" 
+                                            Tag="InTraslated"/>
+                        <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_CASE_INSENSTIVE" 
+                                            Icon="{ui:FontIcon Glyph=&#xE8D2;}" 
+                                            Tag="CaseInsensitive"/>
+                        <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_CONTAINS" 
+                                            Icon="{ui:FontIcon Glyph=&#xE92C;}" 
+                                            Tag="Contains"/>
+                        <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_LINE" 
+                                            Icon="{ui:FontIcon Glyph=&#xF152;}" 
+                                            Tag="InLine"/>
+                        <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_EMPTY_LINE" 
+                                            IsEnabled="False"
+                                            Icon="{ui:FontIcon Glyph=&#xE8FF;}" 
+                                            Tag="InLine"/>
+                    </controls:TokenView>
+                    <AutoSuggestBox Grid.Column="0" Grid.Row="1"
+                                    x:Name="Asb_Search"
+                                    PlaceholderText="Search for"
+                                    QuerySubmitted="Asb_Search_QuerySubmitted">
+                        <AutoSuggestBox.KeyboardAccelerators>
+                            <KeyboardAccelerator Modifiers="Control" Key="P" Invoked="KeyboardAccelerator_Invoked"/>
+                        </AutoSuggestBox.KeyboardAccelerators>
+                    </AutoSuggestBox>
+                    <DropDownButton Grid.Column="1" Grid.Row="1">
+                        <DropDownButton.Content>
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="5">
+                                <FontIcon Glyph="&#xE71C;" />
+                                <TextBlock x:Name="Tbk_Filter"
+                                           x:Uid="\RTranslator\RTResources\TEXT_ALL"/>
+                            </StackPanel>
+                        </DropDownButton.Content>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout Placement="Bottom">
+                                <MenuFlyoutItem x:Uid="\RTranslator\RTResources\TEXT_ALL" 
+                                                x:Name="Mfi_InicialSelected"
+                                                Click="BtnFilter_Click"
+                                                Tag="All"/>
+                                <MenuFlyoutItem x:Uid="\RTranslator\RTResources\TEXT_TRANSLATED" 
+                                                Click="BtnFilter_Click"
+                                                Tag="Translated"/>
+                                <MenuFlyoutItem x:Uid="\RTranslator\RTResources\TEXT_NOT_TRANSLATED"  
+                                                Click="BtnFilter_Click"
+                                                Tag="NotTranslated"/>
+                                <MenuFlyoutItem x:Uid="\RTranslator\RTResources\TEXT_EQUAL"
+                                                Click="BtnFilter_Click"
+                                                Tag="Equal"/>
+                                <MenuFlyoutItem x:Uid="\RTranslator\RTResources\TEXT_BLANK"
+                                                Click="BtnFilter_Click"
+                                                Tag="Blank"/>
+                                <MenuFlyoutItem Text="Tamanho muito diferent"
+                                                Click="BtnFilter_Click"
+                                                Tag="LowSize"/>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+        <!--#endregion-->
+
+        <!--#region List of Dialogues-->
+        <ListView 
+            Grid.Row="1"
+            x:Name="Ltv_Main"
+            TabIndex="0"
+            ItemsSource="{x:Bind ViewModel.DialoguesIncremental}"
+            ItemTemplate="{StaticResource TranslateFileItem}"
+            IsItemClickEnabled="True"
+            ItemClick="ListView_ItemClick"
+            KeyDown="ListView_KeyDown"
+        />
+        <!--#endregion-->
+
+        <Popup Grid.Row="0" Grid.RowSpan="2"
+               x:Name="Pop_Replace"
+               HorizontalOffset="100">
+            <components:ReplaceWindown Width="800"
+                ReplaceRequest="ReplaceWindown_ReplaceRequest"
+                CloseRequested="ReplaceWindown_CloseRequested"/>
+        </Popup>
+
+
+    </Grid>
+    
+</Page>

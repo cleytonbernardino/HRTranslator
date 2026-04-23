@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="HHub.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Translater HUB">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid>
+        <NavigationView
+            ItemInvoked="NavigationView_ItemInvoked"
+            Loaded="NavigationView_Loaded"
+            IsBackButtonVisible="Collapsed">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Ren'py"
+                                    Tag="renpy"
+                                    IsEnabled="True">
+                    <NavigationViewItem.Icon>   
+                        <FontIcon Glyph="&#xE775;" />
+                    </NavigationViewItem.Icon>
+
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <Frame x:Name="Frm_Navigation"/>
+        </NavigationView>
+    </Grid>
+
+</Window>

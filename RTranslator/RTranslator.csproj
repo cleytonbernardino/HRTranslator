@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>RTranslator</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <WinUISDKReferences>false</WinUISDKReferences>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	<Platforms>x86;x64;ARM64</Platforms>
+	<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+	<Nullable>enable</Nullable>
+  </PropertyGroup>
+    <ItemGroup>
+	    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+		    <_Parameter1>RTranslator.Test</_Parameter1>
+	    </AssemblyAttribute>
+    </ItemGroup>
+  <ItemGroup>
+    <None Remove="Controls\ReplaceWindown.xaml" />
+    <None Remove="PanelViews\ProjectSettingsComponent.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Labs.WinUI.Controls.DataTable" Version="0.1.251217-build.2433" />
+    <PackageReference Include="CommunityToolkit.Labs.WinUI.Controls.TokenView" Version="0.1.251217-build.2433" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" />
+	<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HHub.Shared\HHub.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="PanelViews\ProjectSettingsComponent.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Components\TextBoxDialog.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\ReplaceWindown.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+</Project>

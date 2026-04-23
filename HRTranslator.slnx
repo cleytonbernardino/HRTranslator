@@ -1,0 +1,27 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="ARM" />
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="HHub.Shared/HHub.Shared.csproj" Id="f13ef9f8-be65-428b-8f00-b8ce6eb67137">
+    <Platform Solution="Debug|x64" Project="x64" />
+  </Project>
+  <Project Path="HHub/HHub.csproj" Id="fdfc5c05-de5f-439b-8550-c5b6c6d705bd">
+    <Platform Solution="*|Any CPU" Project="x64" />
+    <Platform Solution="*|ARM" Project="x64" />
+    <Platform Solution="*|ARM64" Project="ARM64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Deploy />
+  </Project>
+  <Project Path="RTranslator.Test/RTranslator.Test.csproj" Id="2c89a7d5-4eb6-4728-a380-39288b07d31e" />
+  <Project Path="RTranslator/RTranslator.csproj" Id="2f679583-7b32-4b36-93a0-d29c6a5005db">
+    <Platform Solution="Debug|x64" Project="x64" />
+  </Project>
+</Solution>

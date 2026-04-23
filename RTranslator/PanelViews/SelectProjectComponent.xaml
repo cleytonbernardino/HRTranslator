@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="RTranslator.PanelViews.SelectProjectComponent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:helpers="using:RTranslator.Helpers"
+    xmlns:models="using:RTranslator.Models"
+    mc:Ignorable="d">
+
+    <!--#region Page Resources-->
+    <Page.Resources>
+        <Style x:Key="BorderShadown" TargetType="Border">
+            <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}"/>
+            <Setter Property="Background" Value="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        
+        <DataTemplate x:Key="FolderTemplate" x:DataType="models:ExploreItem">
+            <TreeViewItem ItemsSource="{x:Bind Children}">
+                <StackPanel Orientation="Horizontal">
+                    <FontIcon Glyph="&#xEC50;"
+                              Margin="0, 0, 10, 0"/>
+                    <TextBlock Text="{x:Bind Name}"/>
+                </StackPanel>
+            </TreeViewItem>
+        </DataTemplate>
+
+        <DataTemplate x:Name="FileTemplate" x:DataType="models:ExploreItem">
+            <TreeViewItem>
+                <StackPanel Orientation="Horizontal">
+                    <FontIcon Glyph="&#xE8A5;" />
+                    <TextBlock Text="{x:Bind Name}"/>
+                </StackPanel>
+            </TreeViewItem>
+        </DataTemplate>
+       
+        <helpers:ExplorerItemTemplateSelector x:Name="ExplorerItemTemplateSelector"
+                                            FolderTemplate="{StaticResource FolderTemplate}"
+                                            FileTemplate="{StaticResource FileTemplate}"/>
+    </Page.Resources>
+    <!--#endregion-->
+
+    <Border Margin="0, 20, 0, 0"
+            Translation="0, 0, 64"
+            Style="{ThemeResource BorderShadown}"
+            >
+        <Grid Width="600"
+              Height="600"
+              ColumnSpacing="10"
+              Padding="16"
+              ColumnDefinitions="*, 200"
+              RowDefinitions="Auto, *"
+              >
+            <StackPanel Grid.Column="0" Grid.ColumnSpan="1"
+                        Grid.Row="0"
+                        Spacing="5"
+                        Margin="0, 0, 0, 16"
+                        >
+                <TextBlock x:Uid="\RTranslator\RTResources\RENPY_TRANSLATOR"
+                           Style="{StaticResource TitleTextBlockStyle}"
+                           />
+                <TextBlock x:Uid="\RTranslator\RTResources\SELECT_PROJECT"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Margin="5, 0"
+                           />
+            </StackPanel>
+            <TreeView Grid.Column="0" Grid.Row="1"
+                      x:Name="Trv_Projects"
+                      ItemsSource="{x:Bind ViewModel.Projects}"
+                      ItemTemplateSelector="{StaticResource ExplorerItemTemplateSelector}"
+                      SelectionMode="Single"
+                      SelectionChanged="TrvProjects_SelectionChanged"
+                      IsDoubleTapEnabled="True"
+                      DoubleTapped="TrvProjects_DoubleTapped"/>
+            <StackPanel Grid.Column="1" Grid.Row="1"
+                        Spacing="16">
+                <Button Click="RefreshView">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon Glyph="&#xE72C;" 
+                                Margin="0, 0, 10, 0"/>
+                        <TextBlock x:Uid="\RTranslator\RTResources\REFRESH"/>
+                    </StackPanel>
+                </Button>
+                <Button Click="CreatNewProject">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon Glyph="&#xECC8;" 
+                                Margin="0, 0, 10, 0"/>
+                        <TextBlock x:Uid="\RTranslator\RTResources\NEW_PROJECT"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="Btn_ChoiceProject"
+                        Click="SelectProject"
+                        IsEnabled="False">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon Glyph="&#xE838;" 
+                                Margin="0, 0, 10, 0"/>
+                        <TextBlock x:Uid="\RTranslator\RTResources\CHOICE_PROJECT"/>
+                    </StackPanel>
+                </Button>
+                <Button Click="DeleteProject"
+                        x:Name="Btn_DeleteProject"
+                        IsEnabled="False">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon Glyph="&#xE74D;" 
+                                Margin="0, 0, 10, 0"/>
+                        <TextBlock x:Uid="\RTranslator\RTResources\DELETE_PROJECT"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+    </Border>
+</Page>
