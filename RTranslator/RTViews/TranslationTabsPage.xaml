@@ -42,6 +42,7 @@
                   TabWidthMode="SizeToContent"
                   AddTabButtonClick="TabView_AddTabButtonClick" 
                   TabCloseRequested="TabView_TabCloseRequested"
+                  PreviewKeyDown="Tab_Root_PreviewKeyDown"
                   Loaded="TabView_Loaded"/>
 
         <Grid x:Name="FileSwitcherOverlay" Visibility="Collapsed" Background="#80000000"
@@ -49,19 +50,11 @@
             <Border Width="450" Height="550" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" 
                     CornerRadius="8" Padding="16" HorizontalAlignment="Center" VerticalAlignment="Center">
 
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBox x:Name="SearchInputBox" PlaceholderText="Search..." Margin="0,0,0,16"/>
-
-                    <TreeView x:Name="FileTreeView" 
-                                Grid.Row="1"
-                                ItemsSource="{x:Bind ViewModel.ExploreItem.Children, Mode=OneWay}"
-                                ItemTemplateSelector="{StaticResource FileTemplateSelector}" />
-                </Grid>
+                <TreeView x:Name="FileTreeView" 
+                        Grid.Row="1"
+                        ItemsSource="{x:Bind ViewModel.ExploreItem.Children, Mode=OneWay}"
+                        ItemTemplateSelector="{StaticResource FileTemplateSelector}" 
+                        SelectionChanged="FileTreeView_SelectionChanged" />
             </Border>
         </Grid>
     </Grid>

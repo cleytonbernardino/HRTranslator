@@ -23,6 +23,8 @@ public sealed partial class TranslationTabsPage : Page
     private readonly IMainApp _mainApp;
     private readonly IMessageQueue _messageQueue;
 
+    private readonly Dictionary<string, int> _tabs = [];
+
     public TranslationTabsPage()
     {
         ViewModel = Ioc.Default.GetRequiredService<TranslationTabsPageViewModel>();
@@ -94,6 +96,7 @@ public sealed partial class TranslationTabsPage : Page
         var frame = CreateNewFrame(typeof(TranslationFileComponent), project);
         Tab_Root.TabItems.Add(CreateNewTab(project.Name, frame));
         Tab_Root.SelectedIndex = Tab_Root.TabItems.Count - 1;
+        _tabs.TryAdd(project.Name, Tab_Root.SelectedIndex);
     }
 
     private void OpenExploreItems()
@@ -131,8 +134,10 @@ public sealed partial class TranslationTabsPage : Page
 
     private void TabView_TabCloseRequested(TabView sender, TabViewTabCloseRequestedEventArgs args)
     {
-        ViewModel.DeleteFile((string)args.Tab.Header);
+        string tabName = (string)args.Tab.Header;
+        ViewModel.DeleteFile(tabName);
         sender.TabItems.Remove(args.Tab);
+        _tabs.Remove(tabName);
     }
 
     private void TabView_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -144,23 +149,29 @@ public sealed partial class TranslationTabsPage : Page
         tabView.TabItems.Add(CreateHomeTab(frame));
     }
 
+    private void Tab_Root_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        var ctrlState = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control);
+        bool isCtrlDown = ctrlState.HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+
+        if (isCtrlDown && e.Key == Windows.System.VirtualKey.Tab)
+        {
+            e.Handled = true;
+            ToggleFileSwitcher();
+        }
+    }
+
     private void CloseFileSwitcher()
     {
         FileSwitcherOverlay.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-        SearchInputBox.Text = string.Empty;
     }   
 
     private void ToggleFileSwitcher()
     {
         if (FileSwitcherOverlay.Visibility == Microsoft.UI.Xaml.Visibility.Collapsed)
-        {
             FileSwitcherOverlay.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-            SearchInputBox.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
-        }
         else
-        {
             CloseFileSwitcher();
-        }
     }
 
     private void ChangeFileAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -171,4 +182,15 @@ public sealed partial class TranslationTabsPage : Page
 
     private void FileSwitcherOverlay_PointerPressed(object sender, PointerRoutedEventArgs e)
         => CloseFileSwitcher();
+
+    private void FileTreeView_SelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
+    {
+        if (args.AddedItems.FirstOrDefault() is not ExploreItem item) return;
+        
+        if (_tabs.TryGetValue(item.Name, out int index))
+        {
+            Tab_Root.SelectedIndex = index;
+        }
+        CloseFileSwitcher();
+    }
 }
