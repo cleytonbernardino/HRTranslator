@@ -3,6 +3,7 @@ using HHub.Shared.Messages;
 using HHub.Shared.Models;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using RTranslator.Extensions;
 using RTranslator.Models;
 using RTranslator.ModelView;
 using RTranslator.PanelView;
@@ -79,6 +80,18 @@ public sealed partial class TranslationTabsPage : Page
         return files ?? [];
     }
 
+    private async Task<StorageFolder?> PickFolderAsync()
+    {
+        FolderPicker picker = new();
+        picker.FileTypeFilter.Add(".rpy");
+
+        var hwnd = WindowNative.GetWindowHandle(_mainApp.GetWindown());
+        InitializeWithWindow.Initialize(picker, hwnd);
+
+        var folder = await picker.PickSingleFolderAsync();
+        return folder;
+    }
+
     private void OnRebuildTabsRequested()
     {
         if (ViewModel.ExploreItem.Children.Count == 0)
@@ -109,21 +122,48 @@ public sealed partial class TranslationTabsPage : Page
         if (ViewModel.ExploreItem is null)
             return;
 
-        foreach (var project in ViewModel.ExploreItem.Children)
+        foreach(var file in ViewModel.ExploreItem.GetAllFiles())
         {
-            OnAddTabRequested(project);
+            OnAddTabRequested(file);
         }
+    }
+
+    private async Task PickManualFiles()
+    {
+        var files = await PickFilesAsync();
+        if (files.Count <= 0) return;
+        ViewModel.AddFilesToProject(files);
+    }
+
+    private async Task PickAutoFiles()
+    {
+        var folder = await PickFolderAsync();
+        if (folder is null) return;
+        ViewModel.AddAllFilesToProject(folder.Path);
     }
 
     private async void TabView_AddTabButtonClick(TabView sender, object args)
     {
         try
         {
-            var files = await PickFilesAsync();
-            if (files.Count > 0)
+            string description =
+                $"{_localizer.GetString("SELECT_FILE_MODE_DESCRIPTION_A")}\n{_localizer.GetString("SELECT_FILE_MODE_DESCRIPTION_M")}";
+            var dialog = new ContentDialog()
             {
-                ViewModel.AddFilesToProject(files);
-            }
+                XamlRoot = this.XamlRoot,
+                Title=_localizer.GetString("SELECT_FILE_MODE_TITLE"),
+                Content=description,
+                PrimaryButtonText = "Auto",
+                SecondaryButtonText = _localizer.GetString("SELECT_FILE_MODE_BUTTON_M"),
+                DefaultButton = ContentDialogButton.Secondary
+            };
+            AlertScreenMessage msg = new(dialog);
+            var pickMode = await _messageQueue.EnqueueQuestionAsync(msg);
+            if (pickMode == ContentDialogResult.Primary)
+                await PickAutoFiles();
+            else
+                await PickManualFiles();
+            ViewModel.SaveExploreItem();
         }
         catch (Exception ex)
         {

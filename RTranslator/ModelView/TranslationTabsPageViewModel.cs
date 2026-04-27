@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.UI.Xaml.Controls;
 using RTranslator.FIleIO;
 using RTranslator.Models;
 using Windows.Storage;
@@ -43,8 +42,40 @@ internal partial class TranslationTabsPageViewModel : ObservableObject, IRecipie
 
             RequestAddTabs?.Invoke(exploreItem);
         }
-        ExploreItemSerializer.Save(_exploreItemSelected);
     }
+
+    public void AddAllFilesToProject(string startFolder)
+    {
+        var directories = Directory.EnumerateDirectories(startFolder, "*", SearchOption.AllDirectories);
+        foreach (var dir in directories)
+        {
+            var filesPaths = Directory.EnumerateFiles(dir, "*.rpy");
+            if (filesPaths.Any())
+            {
+                var exploreItem = new ExploreItem()
+                {
+                    Name = Path.GetRelativePath(startFolder, dir),
+                    Path = string.Empty,
+                    IsFile = false
+                };
+
+                foreach (var filePath in filesPaths)
+                {
+                    string name = Path.GetFileName(filePath);
+                    exploreItem.Children.Add(new ExploreItem()
+                    {
+                        Name = GetUniqueName(name),
+                        Path = filePath,
+                        IsFile = true
+                    });
+                }
+
+                ExploreItem.Children.Add(exploreItem);
+            }
+        }
+    }
+
+    public void SaveExploreItem() => ExploreItemSerializer.Save(_exploreItemSelected);
 
     public void DeleteFile(string fileName)
     {

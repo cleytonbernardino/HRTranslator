@@ -174,4 +174,16 @@
   <data name="CONFIRMATION" xml:space="preserve">
     <value>Confirmação</value>
   </data>
+  <data name="SELECT_FILE_MODE_TITLE" xml:space="preserve">
+    <value>Que tipo de seleção você deseja?</value>
+  </data>
+  <data name="SELECT_FILE_MODE_DESCRIPTION_A" xml:space="preserve">
+    <value>(Auto) Seleciona uma pasta recursivamente</value>
+  </data>
+  <data name="SELECT_FILE_MODE_DESCRIPTION_M" xml:space="preserve">
+    <value>(Manualmente) Seleciona arquivos específicos</value>
+  </data>
+  <data name="SELECT_FILE_MODE_BUTTON_M" xml:space="preserve">
+    <value>Manualmente</value>
+  </data>
 </root>
