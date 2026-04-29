@@ -144,9 +144,9 @@ internal sealed partial class DialogueSource : IIncrementalSource<Dialogue>
 
         var comparison = Options.HasFlag(SearchOptions.CaseInsensitive) ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
 
-        Func<Dialogue, string> field = Options.HasFlag(SearchOptions.SearchInTranslated)
-            ? static d => d.New
-            : static d => d.Original;
+        Func<Dialogue, string> field = Options.HasFlag(SearchOptions.SearchInOriginal)
+            ? static d => d.Original
+            : static d => d.New;
 
         return Options.HasFlag(SearchOptions.SearchInText)
             ? Dialogues.Where(dialogue => field(dialogue).Contains(_searchQuery, comparison))

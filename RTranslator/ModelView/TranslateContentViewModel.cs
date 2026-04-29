@@ -87,7 +87,7 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
     public partial int DialogueProcess { get; set; } = 0;
 
     [ObservableProperty]
-    public partial bool IsBusy { get; set; } = false;
+    public partial bool IsBusy { get; private set; } = false;
     #endregion
 
     public TranslateContentViewModel(
@@ -187,15 +187,21 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
             return text;
 
         IsBusy = true;
-        TagProtector tagProtector = new();
-        text = tagProtector.Protect(text);
+        try
+        {
+            TagProtector tagProtector = new();
+            text = tagProtector.Protect(text);
 
-        var translatedText = await _translateService.TranslateAsync(text, _settings.SrcLang, _settings.DstLang, cancellationToken);
-        string result = tagProtector.Restore(translatedText);
+            var translatedText = await _translateService.TranslateAsync(text, _settings.SrcLang, _settings.DstLang, cancellationToken);
+            string result = tagProtector.Restore(translatedText);
 
-        _exploreItem!.TraslatedCount++;
-        IsBusy = false;
-        return result;
+            _exploreItem!.TraslatedCount++;
+            return result;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     public async Task TranslateAsync(CancellationToken cancellationToken = default)
@@ -221,9 +227,15 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
                 break;
 
             var texts = currentBatch.Select(e => tagProtector.Protect(e.Original));
-            var translatedResult = await _translateService.TranslateBatchAsync(texts, _settings.SrcLang, _settings.DstLang, cancellationToken);
-
-            ApplyTranslationResults(currentBatch, translatedResult, tagProtector);
+            try
+            {
+                var translatedResult = await _translateService.TranslateBatchAsync(texts, _settings.SrcLang, _settings.DstLang, cancellationToken);
+                ApplyTranslationResults(currentBatch, translatedResult, tagProtector);
+            }catch (OperationCanceledException)
+            {
+                IsBusy = false;
+                throw;
+            }
 
             currentIndex += currentBatchSize;
             requestCounter++;
@@ -275,12 +287,11 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
         if (IsBusy)
             return;
 
-        IsBusy = true;
         var selectedToken = GetSearchOptions(tag);
+        if (selectedToken == SearchOptions.None) return;
 
-        _selectedTokens.Add(selectedToken);
+        DSource.Options |= selectedToken;
         _ = DialoguesIncremental!.RefreshAsync();
-        IsBusy = false;
     }
 
     public void RemoveSelectedToken(string tag)
@@ -288,12 +299,10 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
         if (IsBusy)
             return;
 
-        IsBusy = true;
         var selectedToken = GetSearchOptions(tag);
 
-        _selectedTokens.Remove(selectedToken);
+        DSource.Options &= ~selectedToken;
         _ = DialoguesIncremental!.RefreshAsync();
-        IsBusy = false;
     }
 
     public void Filter(string filterTag)

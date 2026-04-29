@@ -216,8 +216,8 @@
   <data name="TEXT_UPPERCASE.Text" xml:space="preserve">
     <value>Uppercase</value>
   </data>
-  <data name="BTN_TRANSLATED.Content" xml:space="preserve">
-    <value>Translated</value>
+  <data name="BTN_ORIGINAL.Content" xml:space="preserve">
+    <value>Original</value>
   </data>
   <data name="APPBAR_DICTIONARY.Label" xml:space="preserve">
     <value>Create Dictionary</value>

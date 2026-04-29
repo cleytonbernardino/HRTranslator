@@ -1,4 +1,5 @@
-﻿using RTranslator.Models;
+﻿using HHub.Shared.Utils;
+using RTranslator.Models;
 
 namespace RTranslator.Extensions;
 
@@ -29,5 +30,37 @@ internal static class ExploreItemExtensions
 
         foreach (var child in item.Children)
             CollectFiles(child, files);
+    }
+
+    public static void RemoveFile(this ExploreItem root, string name)
+    {
+        RemoveRecursive(root.Children, name);
+    }
+
+    public static void RemoveFile(this IEnumerable<ExploreItem> roots, string name)
+    {
+        var collection = roots as ObservableRangeCollection<ExploreItem>
+            ?? new ObservableRangeCollection<ExploreItem>(roots);
+        RemoveRecursive(collection, name);
+    }
+
+    private static void RemoveRecursive(ObservableRangeCollection<ExploreItem> children, string name)
+    {
+        foreach (var child in children.ToList())
+        {
+            if (child.Name == name)
+            {
+                children.Remove(child);
+                return;
+            }
+
+            if (!child.IsFile)
+            {
+                RemoveRecursive(child.Children, name);
+
+                if (child.Children.Count == 0)
+                    children.Remove(child);
+            }
+        }
     }
 }

@@ -5,7 +5,7 @@ public enum SearchOptions
 {
     None = 0,
     SearchInText = 1 << 0,
-    SearchInTranslated = 1 << 1,
+    SearchInOriginal = 1 << 1,
     CaseInsensitive = 1 << 2,
     SearchForLine = 1 << 3,
 }

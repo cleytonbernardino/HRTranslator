@@ -211,22 +211,18 @@
                                         x:Name="Tkv_SearchTokens"
                                         SelectionChanged="Tkv_SearchTokens_SelectionChanged"
                                         SelectionMode="Multiple">
-                        <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_TRANSLATED"
+                        <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_ORIGINAL"
                                             Icon="{ui:FontIcon Glyph=&#xF085;}" 
-                                            Tag="InTraslated"/>
+                                            Tag="SearchInOriginal"/>
                         <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_CASE_INSENSTIVE" 
-                                            Icon="{ui:FontIcon Glyph=&#xE8D2;}" 
+                                            Icon="{ui:FontIcon Glyph=&#xE8D2;}"
                                             Tag="CaseInsensitive"/>
                         <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_CONTAINS" 
                                             Icon="{ui:FontIcon Glyph=&#xE92C;}" 
-                                            Tag="Contains"/>
+                                            Tag="SearchInText"/>
                         <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_LINE" 
                                             Icon="{ui:FontIcon Glyph=&#xF152;}" 
-                                            Tag="InLine"/>
-                        <controls:TokenItem x:Uid="\RTranslator\RTResources\BTN_EMPTY_LINE" 
-                                            IsEnabled="False"
-                                            Icon="{ui:FontIcon Glyph=&#xE8FF;}" 
-                                            Tag="InLine"/>
+                                            Tag="SearchForLine"/>
                     </controls:TokenView>
                     <AutoSuggestBox Grid.Column="0" Grid.Row="1"
                                     x:Name="Asb_Search"

@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
+using RTranslator.Extensions;
 using RTranslator.FIleIO;
 using RTranslator.Models;
 using Windows.Storage;
@@ -9,6 +10,8 @@ namespace RTranslator.ModelView;
 internal partial class TranslationTabsPageViewModel : ObservableObject, IRecipient<SelectedProjectChangedMessage>
 {
     private readonly ExploreItemSelected _exploreItemSelected;
+
+    private readonly List<ExploreItem> _tabsItem = [];
 
     public ExploreItem ExploreItem => _exploreItemSelected.Project;
 
@@ -38,6 +41,7 @@ internal partial class TranslationTabsPageViewModel : ObservableObject, IRecipie
                 Path = file.Path,
                 IsFile = true
             };
+            _tabsItem.Add(exploreItem);
             ExploreItem.Children.Add(exploreItem);
 
             RequestAddTabs?.Invoke(exploreItem);
@@ -47,6 +51,10 @@ internal partial class TranslationTabsPageViewModel : ObservableObject, IRecipie
     public void AddAllFilesToProject(string startFolder)
     {
         var directories = Directory.EnumerateDirectories(startFolder, "*", SearchOption.AllDirectories);
+        var rootFiles = Directory.EnumerateFiles(startFolder, "*.rpy");
+        if (rootFiles.Any())
+            AddFilesToExploreItem(rootFiles, ExploreItem);
+
         foreach (var dir in directories)
         {
             var filesPaths = Directory.EnumerateFiles(dir, "*.rpy");
@@ -58,18 +66,9 @@ internal partial class TranslationTabsPageViewModel : ObservableObject, IRecipie
                     Path = string.Empty,
                     IsFile = false
                 };
+                AddFilesToExploreItem(filesPaths, exploreItem);
 
-                foreach (var filePath in filesPaths)
-                {
-                    string name = Path.GetFileName(filePath);
-                    exploreItem.Children.Add(new ExploreItem()
-                    {
-                        Name = GetUniqueName(name),
-                        Path = filePath,
-                        IsFile = true
-                    });
-                }
-
+                _tabsItem.Add(exploreItem);
                 ExploreItem.Children.Add(exploreItem);
             }
         }
@@ -79,8 +78,7 @@ internal partial class TranslationTabsPageViewModel : ObservableObject, IRecipie
 
     public void DeleteFile(string fileName)
     {
-        var exploreItem = ExploreItem.Children.First(item => item.Name == fileName);
-        ExploreItem.Children.Remove(exploreItem);
+        ExploreItem.RemoveFile(fileName);
         ExploreItemSerializer.Save(_exploreItemSelected);
     }
 
@@ -107,6 +105,23 @@ internal partial class TranslationTabsPageViewModel : ObservableObject, IRecipie
                 return newName;
             }
             counter++;
+        }
+    }
+
+    private void AddFilesToExploreItem(IEnumerable<string> filesPaths, ExploreItem exploreItem)
+    {
+        foreach (var filePath in filesPaths)
+        {
+            string name = Path.GetFileName(filePath);
+
+            ExploreItem exploreItemChild = new()
+            {
+                Name = GetUniqueName(name),
+                Path = filePath,
+                IsFile = true
+            };
+            exploreItem.Children.Add(exploreItemChild);
+            _tabsItem.Add(exploreItemChild);
         }
     }
 }

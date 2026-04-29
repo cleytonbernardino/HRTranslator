@@ -157,8 +157,12 @@ internal sealed partial class TranslationFileComponent : Page
         {
             DispatcherQueue.TryEnqueue(async () =>
             {
-                await ViewModel.TranslateAsync(_cancelToken.Token);
-                BtnSaveFile_Click(sender, e);
+                try
+                {
+                    await ViewModel.TranslateAsync(_cancelToken.Token);
+                    BtnSaveFile_Click(sender, e);
+                }
+                catch{}
             });
         }
     }
