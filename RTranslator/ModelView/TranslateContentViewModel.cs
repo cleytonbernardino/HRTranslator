@@ -76,11 +76,11 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
 
     #region ObservableProperty
     [ObservableProperty]
-    public partial int DialoguesCount { get; set; } = 0;
+    public partial int DialoguesCount { get; private set; } = 0;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PorcentDialoguesTranslated))]
-    public partial int DialoguesMax { get; set; } = 0;
+    public partial int DialoguesMax { get; private set; } = 0;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PorcentDialoguesTranslated))]
@@ -118,6 +118,7 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
         _exploreItem = item;
         FilePath = item.Path!;
         DSource = new(FilePath);
+
         RegisterDialogues();
         GetDialoguesAlreadyProcessed();
 
@@ -359,10 +360,19 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
         {
             await Task.Delay(200);
         }
+        await DialoguesIncremental!.RefreshAsync();
         DialoguesMax = DSource.Dialogues.Count;
         if (_settings.GenerateCache == SettingsQuestEnum.Always)
             ReadCache();
 
+        if (!DSource.IsFullyLoaded)
+        {
+            while (!DSource.IsFullyLoaded)
+            {
+                await Task.Delay(2000);
+                DialoguesMax= DSource.Dialogues.Count;
+            }
+        }
     }
 
     private static SearchOptions GetSearchOptions(string name) => Enum.TryParse<SearchOptions>(name, out var result) ? result : SearchOptions.None;

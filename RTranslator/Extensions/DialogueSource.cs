@@ -7,6 +7,8 @@ namespace RTranslator.Extensions;
 
 internal sealed partial class DialogueSource : IIncrementalSource<Dialogue>
 {
+    public event Action? OnInitialLoadCompleted;
+
     private readonly FileManipulation _file = new();
 
     private List<Dialogue> _searchCache = [];
@@ -17,7 +19,10 @@ internal sealed partial class DialogueSource : IIncrementalSource<Dialogue>
     private string _searchQuery = string.Empty;
 
     public List<Dialogue> Dialogues { get; private set; } = [];
+
     public bool IsLoaded { get; private set; } = false;
+
+    public bool IsFullyLoaded => _file.IsFullyLoaded;
 
     public SearchOptions Options
     {
@@ -38,13 +43,8 @@ internal sealed partial class DialogueSource : IIncrementalSource<Dialogue>
 
     private async Task LoadDialoguesAsync()
     {
-        try
-        {
-            Dialogues = await _file.GetContentAsync();
-        }finally
-        {
-            IsLoaded = true;
-        }
+        await _file.GetContentAsync(Dialogues);
+        IsLoaded = true;
     }
 
     public async Task<IEnumerable<Dialogue>> GetPagedItemsAsync(int pageIndex, int pageSize, CancellationToken cancellationToken = default)
@@ -66,11 +66,11 @@ internal sealed partial class DialogueSource : IIncrementalSource<Dialogue>
 
     private async Task WaitToLoad()
     {
-        int attemp = 0;
-        while (attemp != 3 || !IsLoaded)
+        int attempt = 0;
+        while (attempt < 3 && !IsLoaded)
         {
             await Task.Delay(100);
-            attemp++;
+            attempt++;
         }
     }
 
@@ -111,7 +111,7 @@ internal sealed partial class DialogueSource : IIncrementalSource<Dialogue>
 
         _filterCache = _activeFilter switch
         {
-            FilterMode.Equal => Dialogues.Where(dialogues => dialogues.Original == dialogues.New).ToList(),
+            FilterMode.Equal => Dialogues.Where(d => d.Original == d.New).ToList(),
             FilterMode.Blank => Dialogues.Where(d => string.IsNullOrEmpty(d.New)).ToList(),
             _ => []
         };
@@ -142,7 +142,9 @@ internal sealed partial class DialogueSource : IIncrementalSource<Dialogue>
             return Dialogues.Where(dialogue => dialogue.Line == line);
         }
 
-        var comparison = Options.HasFlag(SearchOptions.CaseInsensitive) ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+        var comparison = Options.HasFlag(SearchOptions.CaseInsensitive)
+            ? StringComparison.CurrentCultureIgnoreCase
+            : StringComparison.CurrentCulture;
 
         Func<Dialogue, string> field = Options.HasFlag(SearchOptions.SearchInOriginal)
             ? static d => d.Original
@@ -166,7 +168,8 @@ internal sealed partial class DialogueSource : IIncrementalSource<Dialogue>
                 {
                     var dialogueIndex = Dialogues.IndexOf(dialogue);
                     Dialogues[dialogueIndex].New = dialogue.New.Replace(search, replacement);
-                } else
+                }
+                else
                 {
                     dialogue.New = dialogue.New.Replace(search, replacement);
                 }
