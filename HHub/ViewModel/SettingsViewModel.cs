@@ -10,6 +10,7 @@ public class SettingsViewModel(Settings settings)
     public Settings Sett { get; } = settings;
 
     public string[] Languages { get; } = [
+    "auto",
     "en",
     "pt",
     "es",

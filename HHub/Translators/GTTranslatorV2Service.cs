@@ -11,13 +11,10 @@ namespace HHub.Translators;
 
 public sealed partial class GoogleTranslateV2 : ITranslator, IDisposable
 {
-    // TODO: ajuste se o Google mudar o RPC ID
     private const string TRANSLATE_RPC_ID = "MkEWBc";
 
-    // TODO: ajuste se o Google mudar a versão do servidor
     private const string API_VERSION = "boq_translate-webserver_20210323.10_p0";
 
-    // TODO: troque pelo backend preferido se quiser usar mirror/proxy
     private const string BASE_URL = "https://translate.google.com";
 
     // ─── Campos internos ───────────────────────────────────────────────────
@@ -101,7 +98,7 @@ public sealed partial class GoogleTranslateV2 : ITranslator, IDisposable
     {
         var textList = texts?.ToList() ?? throw new ArgumentException("texts não pode ser nulo.");
         if (textList.Count == 0) throw new ArgumentException("texts não pode ser vazio.");
-        if (textList.Count > 10) throw new ArgumentException("Máximo de 10 textos por chamada.");
+        if (textList.Count > 20) throw new ArgumentException("Máximo de 20 textos por chamada.");
 
         sourceLang = NormalizeLanguage(sourceLang);
         targetLang = NormalizeLanguage(targetLang);
@@ -141,7 +138,7 @@ public sealed partial class GoogleTranslateV2 : ITranslator, IDisposable
     {
         if (Volatile.Read(ref _initialized)) return;
 
-        await _initLock.WaitAsync();
+        await _initLock.WaitAsync().ConfigureAwait(false);
         try
         {
             if (Volatile.Read(ref _initialized)) return;
@@ -162,14 +159,14 @@ public sealed partial class GoogleTranslateV2 : ITranslator, IDisposable
             else
                 Console.WriteLine("[GoogleTranslateV2] FSID não encontrado na página — usando valor aleatório.");
 
-            _initialized = true;
+            Volatile.Write(ref _initialized, true);
         }
         catch (Exception ex)
         {
             // FSID aleatório já foi definido em ResetCounters(); podemos continuar,
             // mas registramos o erro para que o chamador saiba o que aconteceu.
             Console.WriteLine($"[GoogleTranslateV2] Falha ao obter FSID: {ex.Message} — usando valor aleatório.");
-            _initialized = true; // evita loop infinito de retentativas
+            Volatile.Write(ref _initialized, true); // evita loop infinito de retentativas
         }
         finally
         {
