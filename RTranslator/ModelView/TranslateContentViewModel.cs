@@ -19,7 +19,7 @@ namespace RTranslator.ViewModel;
 internal sealed partial class TranslateContentViewModel : ObservableObject
 {
     #region Const
-    private const int MaxDialoguesForInt = 7;
+    private const int MaxDialoguesForInt = 9;
     private const int MaxReq = 6;
     private const int WaitingTime = 2; // Time in seconds
     #endregion
@@ -31,7 +31,6 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
     #endregion
 
     #region ReadOnly
-    private readonly HashSet<SearchOptions> _selectedTokens = [];
     private readonly RTLocalizer _localizer;
     private readonly ICacheService _cacheService;
     private readonly Settings _settings;
@@ -43,6 +42,7 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
     #region Private
     private ExploreItem? _exploreItem;
     private bool _isLoaded = false;
+    private bool _endDialogues = false;
     #endregion
 
     #region Properties
@@ -211,6 +211,7 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
             return;
 
         IsBusy = true;
+        _endDialogues = false;
         var dialogues = Dialogues;
         TagProtector tagProtector = new();
 
@@ -221,16 +222,42 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
 
         while (currentIndex < dialogues.Count && !cancellationToken.IsCancellationRequested)
         {
-            var currentBatch = GetNextBatch(dialogues, currentIndex);
-            int currentBatchSize = currentBatch.Count();
+            List<Dialogue> currentBatch;
+            if (_settings.UseDic)
+            {
+                currentBatch = GetNextBatch(dialogues, currentIndex);
+            } else
+            {
+                currentBatch = GetNextBatchWithoutDB(dialogues, currentIndex);
+            }
 
-            if (currentBatchSize == 0)
+            int currentBatchSize = currentBatch.Count;
+
+            if (_endDialogues)
                 break;
 
-            var texts = currentBatch.Select(e => tagProtector.Protect(e.Original));
+            if (currentBatchSize == 0)
+            {
+                currentIndex += MaxDialoguesForInt;
+                continue;
+            }
+
+            List<string> dialoguesToTranslate = new(currentBatch.Count);
+            foreach(var dialogue in currentBatch)
+            {
+                if (dialogue.HasLogic)
+                {
+                    dialoguesToTranslate.Add(tagProtector.Protect(dialogue.TextInIf));
+                    dialoguesToTranslate.Add(tagProtector.Protect(dialogue.New));
+                }else
+                {
+                    dialoguesToTranslate.Add(tagProtector.Protect(dialogue.Original));
+                }
+            }
+
             try
             {
-                var translatedResult = await _translateService.TranslateBatchAsync(texts, _settings.SrcLang, _settings.DstLang, cancellationToken);
+                var translatedResult = await _translateService.TranslateBatchAsync(dialoguesToTranslate, _settings.SrcLang, _settings.DstLang, cancellationToken);
                 ApplyTranslationResults(currentBatch, translatedResult, tagProtector);
             }catch (OperationCanceledException)
             {
@@ -238,7 +265,7 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
                 throw;
             }
 
-            currentIndex += currentBatchSize;
+            currentIndex += MaxDialoguesForInt;
             requestCounter++;
 
             nextSaveThreshold = await HandleThrottlingAndCachingAsync(
@@ -313,13 +340,58 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
         _ = DialoguesIncremental!.RefreshAsync();
     }
 
-    private static IEnumerable<Dialogue> GetNextBatch(List<Dialogue> allDialogues, int currentIndex)
+    private List<Dialogue> GetTranslationInDataBase(List<Dialogue> allDialogues, int currentIndex, int countToTake)
+    {
+        var partialDialogues = allDialogues.Skip(currentIndex).Take(countToTake).ToList();
+
+        var originalTexts = partialDialogues.Select(d => d.Original).ToList();
+        var translated = _cacheService.GetTranslations(originalTexts);
+        if (translated.Count == 0) return partialDialogues;
+
+        int partialDialoguesCount = partialDialogues.Count;
+        for(int i=0; i < partialDialoguesCount; i++) 
+        {
+            if (allDialogues[currentIndex].HasLogic)
+            {
+                currentIndex++;
+                continue;
+            }
+
+            if (translated.TryGetValue(allDialogues[currentIndex].Original, out var value))
+            {
+                allDialogues[currentIndex].New = value;
+                partialDialogues.Remove(allDialogues[currentIndex]);
+            }
+            currentIndex++;
+        }
+
+        return partialDialogues;
+    }
+
+    private List<Dialogue> GetNextBatch(List<Dialogue> allDialogues, int currentIndex)
     {
         int countToTake = Math.Min(MaxDialoguesForInt, allDialogues.Count - currentIndex);
 
-        if (countToTake <= 0) return [];
+        if (countToTake <= 0)
+        {
+            _endDialogues = true;
+            return [];
+        }
 
-        return allDialogues.Skip(currentIndex).Take(countToTake);
+        return GetTranslationInDataBase(allDialogues, currentIndex, countToTake); ;
+    }
+
+    private List<Dialogue> GetNextBatchWithoutDB(List<Dialogue> allDialogues, int currentIndex)
+    {
+        int countToTake = Math.Min(MaxDialoguesForInt, allDialogues.Count - currentIndex);
+
+        if (countToTake <= 0)
+        {
+            _endDialogues = true;
+            return [];
+        }
+
+        return allDialogues.Skip(currentIndex).Take(countToTake).ToList();
     }
 
     private static void ApplyTranslationResults(IEnumerable<Dialogue> dialogues, string[] result, TagProtector tagProtector)
@@ -327,6 +399,11 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
         int i = 0;
         foreach (var dialogue in dialogues)
         {
+            if (dialogue.HasLogic)
+            {
+                dialogue.TextInIf = tagProtector.Restore(result[i]);
+                i++;
+            }
             dialogue.New = tagProtector.Restore(result[i]);
             i++;
         }
@@ -362,15 +439,14 @@ internal sealed partial class TranslateContentViewModel : ObservableObject
         }
         await DialoguesIncremental!.RefreshAsync();
         DialoguesMax = DSource.Dialogues.Count;
-        if (_settings.GenerateCache == SettingsQuestEnum.Always)
-            ReadCache();
 
         if (!DSource.IsFullyLoaded)
         {
+            var waitingTime = TimeSpan.FromSeconds(WaitingTime);
             while (!DSource.IsFullyLoaded)
             {
-                await Task.Delay(2000);
-                DialoguesMax= DSource.Dialogues.Count;
+                await Task.Delay(waitingTime);
+                DialoguesMax = DSource.Dialogues.Count;
             }
         }
     }

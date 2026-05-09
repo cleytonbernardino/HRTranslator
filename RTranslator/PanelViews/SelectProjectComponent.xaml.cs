@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using RTranslator.Components;
-using RTranslator.Enums;
 using RTranslator.Models;
 using RTranslator.ModelView;
 using RTranslator.Strings;

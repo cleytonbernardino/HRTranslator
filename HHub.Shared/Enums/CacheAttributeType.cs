@@ -3,6 +3,5 @@
 public enum CacheAttrributeType
 {
     Original,
-    Translation,
-    Status
+    Translation
 }
