@@ -151,18 +151,26 @@ public sealed partial class TranslationTabsPage : Page
             var dialog = new ContentDialog()
             {
                 XamlRoot = this.XamlRoot,
-                Title=_localizer.GetString("SELECT_FILE_MODE_TITLE"),
-                Content=description,
+                Title = _localizer.GetString("SELECT_FILE_MODE_TITLE"),
+                Content = description,
                 PrimaryButtonText = "Auto",
                 SecondaryButtonText = _localizer.GetString("SELECT_FILE_MODE_BUTTON_M"),
+                CloseButtonText = _localizer.GetString("CANCEL"),
                 DefaultButton = ContentDialogButton.Secondary
             };
             AlertScreenMessage msg = new(dialog);
             var pickMode = await _messageQueue.EnqueueQuestionAsync(msg);
-            if (pickMode == ContentDialogResult.Primary)
-                await PickAutoFiles();
-            else
-                await PickManualFiles();
+            switch (pickMode)
+            {
+                case ContentDialogResult.Primary:
+                    await PickAutoFiles();
+                    break;
+                case ContentDialogResult.Secondary:
+                    await PickManualFiles();
+                    break;
+                default:
+                    return;
+            }
             ViewModel.SaveExploreItem();
         }
         catch (Exception ex)

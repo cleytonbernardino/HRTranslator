@@ -80,38 +80,7 @@ internal sealed partial class TranslationFileComponent : Page
         _cancelToken = new CancellationTokenSource();
     }
 
-    private async void BtbTranslate_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button button)
-            return;
-
-
-        button.IsEnabled = false;
-        var context = (Dialogue)button.DataContext;
-        context.New = await ViewModel.TranslateAsync(context.Original, _cancelToken.Token);
-        button.IsEnabled = true;
-    }
-
-    private void BtnRestoreDialogue_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button button)
-            return;
-
-        var dataContext = (Dialogue)button.DataContext;
-        dataContext.New = dataContext.Original;
-    }
-
-    private async void BtnCancelTranslation_Click(object sender, RoutedEventArgs e)
-    {
-        await CancelTask();
-        string notificationMsg = $"{_localizer.GetString("TRANSLATION_CANCELLED")}/{ViewModel.FileName}";
-        WindowNotificationMessage msg = new(Title: _localizer.GetString("ALERT"), Message: notificationMsg);
-        await _messageQueue.EnqueueAsync(msg);
-    }
-
-    private void BtnOpenFile_Click(object sender, RoutedEventArgs e) => ViewModel.OpenFile();
-
-    private async void BtnSaveFile_Click(object sender, RoutedEventArgs e)
+    private async Task SaveFile()
     {
         if (ViewModel.BackupMode == HHub.Shared.Enums.SettingsQuestEnum.Ask)
         {
@@ -139,7 +108,7 @@ internal sealed partial class TranslationFileComponent : Page
         await ViewModel.Save();
     }
 
-    private async void BtnTranslateAll_Click(object sender, RoutedEventArgs e)
+    private async Task TranslateAll()
     {
         ContentDialog dialog = new()
         {
@@ -160,12 +129,55 @@ internal sealed partial class TranslationFileComponent : Page
                 try
                 {
                     await ViewModel.TranslateAsync(_cancelToken.Token);
-                    BtnSaveFile_Click(sender, e);
+                    await SaveFile();
                 }
-                catch{}
+                catch(OperationCanceledException) { }
+                catch
+                {
+                    await CancelTask();
+                }
             });
         }
     }
+
+    private async void BtbTranslate_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button)
+            return;
+
+
+        button.IsEnabled = false;
+        var context = (Dialogue)button.DataContext;
+        context.New = await ViewModel.TranslateAsync(context.Original, _cancelToken.Token);
+        if (context.HasLogic && !_cancelToken.IsCancellationRequested)
+        {
+            context.TextInIf = await ViewModel.TranslateAsync(context.TextInIf, _cancelToken.Token);
+        }
+        button.IsEnabled = true;
+    }
+
+    private async void BtnTranslateAll_Click(object sender, RoutedEventArgs e) => await TranslateAll();
+
+    private void BtnRestoreDialogue_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button)
+            return;
+
+        var dataContext = (Dialogue)button.DataContext;
+        dataContext.New = dataContext.Original;
+    }
+
+    private async void BtnCancelTranslation_Click(object sender, RoutedEventArgs e)
+    {
+        await CancelTask();
+        string notificationMsg = $"{_localizer.GetString("TRANSLATION_CANCELLED")}/{ViewModel.FileName}";
+        WindowNotificationMessage msg = new(Title: _localizer.GetString("ALERT"), Message: notificationMsg);
+        await _messageQueue.EnqueueAsync(msg);
+    }
+
+    private void BtnOpenFile_Click(object sender, RoutedEventArgs e) => ViewModel.OpenFile();
+
+    private async void BtnSaveFile_Click(object sender, RoutedEventArgs e) => await SaveFile();
 
     private void BtnFilter_Click(object sender, RoutedEventArgs e)
     {
@@ -276,6 +288,10 @@ internal sealed partial class TranslationFileComponent : Page
     {
         Pop_Replace.IsOpen = !Pop_Replace.IsOpen;
     }
+
+    private async void TranslateAllAccelerator_Invoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+        => await TranslateAll();
+
 
     private void ReplaceWindown_ReplaceRequest(object sender, (string replaceText, bool replaceAll) e)
     {

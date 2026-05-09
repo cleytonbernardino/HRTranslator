@@ -89,6 +89,11 @@
                         Style="{StaticResource CaptionTextBlockStyle}"
                         Text="Novo Texto"/>
                     <TextBox
+                        Margin="0, 0, 0, 5"
+                        Text="{x:Bind TextInIf, Mode=TwoWay}"
+                        Visibility="{x:Bind HasLogic, Mode=OneTime, Converter={StaticResource BoolToVisibilityConverter}}"
+                        ToolTipService.ToolTip="{x:Bind IfCondition, Mode=OneTime}"/>
+                    <TextBox
                         Text="{x:Bind New, Mode=TwoWay}"
                         LostFocus="TbxDialogue_LostFocus"/>
                 </StackPanel>
@@ -101,6 +106,7 @@
 
     <Page.KeyboardAccelerators>
         <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="KeyboardAccelerator_Invoked_1"/>
+        <KeyboardAccelerator Key="T" Modifiers="Control" Invoked="TranslateAllAccelerator_Invoked"/>
     </Page.KeyboardAccelerators>
     
     <Grid

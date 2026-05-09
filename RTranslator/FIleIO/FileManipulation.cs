@@ -6,7 +6,7 @@ namespace RTranslator.FIleIO;
 internal partial class FileManipulation : IAsyncDisposable
 {
     const string _OldFormaterIdentifier = "old";
-    const int _MinLineLength = 5;
+    const int _MinOfChar = 5;
     const int _EarlyReturnThreshold = 15_000;
 
     private IAsyncEnumerator<string>? _iterador;
@@ -68,9 +68,19 @@ internal partial class FileManipulation : IAsyncDisposable
     {
         int produced = 0;
         Dialogue currentDialogue = new();
+        bool dialogueInIf = false;
 
         while (produced < stopAt)
         {
+            // Prevent overwrite and premature end
+            if (!string.IsNullOrEmpty(currentDialogue.New))
+            {
+                dialogues.Add(currentDialogue);
+                currentDialogue = new();
+                dialogueInIf = false;
+                produced++;
+            }
+
             if (!await _iterador!.MoveNextAsync())
             {
                 await DisposeAsync();
@@ -85,7 +95,22 @@ internal partial class FileManipulation : IAsyncDisposable
 
             if (line.StartsWith('#'))
             {
-                ProcessComment(line, currentDialogue);
+                ProcessOriginalTextOrComment(line, currentDialogue);
+                continue;
+            }
+
+            if (IsLogicLine(line))
+            {
+                if (!dialogueInIf)
+                    currentDialogue.IfCondition = line;
+                currentDialogue.HasLogic = true;
+                continue;
+            }
+
+            if (currentDialogue.HasLogic && !dialogueInIf)
+            {
+                ProcessFirstLogicalLine(line, currentDialogue);
+                dialogueInIf = true;
                 continue;
             }
 
@@ -93,10 +118,6 @@ internal partial class FileManipulation : IAsyncDisposable
                 await ProcessOldFormatAsync(line, currentDialogue);
             else
                 ProcessStandardLine(line, currentDialogue);
-
-            dialogues.Add(currentDialogue);
-            currentDialogue = new();
-            produced++;
         }
     }
 
@@ -106,48 +127,82 @@ internal partial class FileManipulation : IAsyncDisposable
             throw new FileNotFoundException();
 
         var dialogueMap = ConvertDialoguesToDictonary(dialogues);
-        var result = new StringBuilder(dialogues.Count * 50);
+        var nFile = new StringBuilder(dialogues.Count * 50);
 
         bool originalTextFound = false;
         string originalText = string.Empty;
 
+        bool firstLogicalLine = false;
+        bool secondLogicalLine = false;
+        string queryFirstText = string.Empty;
+
         await foreach (string line in File.ReadLinesAsync(filePath))
         {
-            if (line.TrimStart().StartsWith('#') && line.IndexOf('"') == -1)
+            string tLine = line.TrimStart();
+            if (tLine.StartsWith("scene"))
             {
-                result.AppendLine(line);
+                nFile.AppendLine(line);
                 continue;
             }
 
-            if (!originalTextFound)
+
+            if (tLine.StartsWith('#') && !line.Contains('"')
+                || string.IsNullOrEmpty(line))
             {
-                int firstQuote = line.IndexOf('"');
-                if (firstQuote == -1)
+                originalTextFound = false;
+                firstLogicalLine = false;
+                secondLogicalLine = false;
+                nFile.AppendLine(line);
+                continue;
+            }
+
+            if (IsLogicLine(tLine))
+            {
+                nFile.AppendLine(line);
+                if (firstLogicalLine)
+                    secondLogicalLine = true;
+
+                firstLogicalLine = true;
+                continue;
+            }
+
+            if (!originalTextFound && !secondLogicalLine)
+            {
+                if (TryGetContentInQuotes(line, out var content))
                 {
-                    result.AppendLine(line);
-                    continue;
+                    originalText = content.ToString();
+                    originalTextFound = true;
                 }
-                int secondQuote = line.LastIndexOf('"');
-                originalText = line.Substring(firstQuote + 1, secondQuote - firstQuote - 1);
-                result.AppendLine(line);
-                originalTextFound = true;
+                nFile.AppendLine(line);
+                continue;
             }
             else
             {
+                if (secondLogicalLine)
+                {
+                    originalText = queryFirstText;
+                }
+                else if (firstLogicalLine)
+                {
+                    queryFirstText = originalText;
+                    if (TryGetContentInQuotes(line.Trim(), out var content))
+                    {
+                        originalText = content.ToString();
+                    }
+                }
+
                 if (dialogueMap.TryGetValue(originalText, out string? newText))
                 {
                     var before = line.AsSpan(0, line.IndexOf('"') + 1);
-                    result.Append(before).Append(newText).Append('"').AppendLine();
+                    nFile.Append(before).Append(newText).Append('"').AppendLine();
                 }
                 else
                 {
-                    result.AppendLine(line);
+                    nFile.AppendLine(line);
                 }
-                originalTextFound = false;
             }
         }
-
-        File.WriteAllText(filePath, result.ToString());
+        File.WriteAllText(filePath, nFile.ToString());
     }
 
     public async ValueTask DisposeAsync()
@@ -160,7 +215,7 @@ internal partial class FileManipulation : IAsyncDisposable
         _isOpen = false;
     }
 
-    private static void ProcessComment(string line, Dialogue dialogue)
+    private static void ProcessOriginalTextOrComment(string line, Dialogue dialogue)
     {
         if (TryGetNumberLine(line, out int numLine))
         {
@@ -182,9 +237,18 @@ internal partial class FileManipulation : IAsyncDisposable
             string nextLine = _iterador.Current.Trim();
             if (TryGetContentInQuotes(nextLine, out var newText))
                 dialogue.New = newText.ToString();
-
-            dialogue.IsOld = true;
         }
+    }
+
+    private static void ProcessFirstLogicalLine(string line, Dialogue dialogue)
+    {
+        if (TryGetContentInQuotes(line, out var content))
+        {
+            string text = content.ToString();
+            dialogue.TextInIf = text;
+            dialogue.TextInIfOriginal = text;
+        }
+            
     }
 
     private static void ProcessStandardLine(string line, Dialogue dialogue)
@@ -226,20 +290,38 @@ internal partial class FileManipulation : IAsyncDisposable
 
     private static bool IsInvalidLine(string line)
     {
-        if (string.IsNullOrEmpty(line) || line.Length < _MinLineLength)
+        if (string.IsNullOrEmpty(line) || line.Length < _MinOfChar)
             return true;
 
         return line.Contains(':', StringComparison.Ordinal)
             && line.Contains("translate", StringComparison.Ordinal);
     }
 
+    private static bool IsLogicLine(string line)
+    {
+        if (line.StartsWith("if") && line.EndsWith(':'))
+            return true;
+        else if (line.StartsWith("else:"))
+            return true;
+        return false;
+    }
+
     private static Dictionary<string, string> ConvertDialoguesToDictonary(List<Dialogue> dialogues)
     {
-        Dictionary<string, string> dialogueMap = new(dialogues.Count);
+        Dictionary<string, string> dialogueMap = new(dialogues.Count + 20);
         foreach (var dialogue in dialogues)
-        {
+        {   
             if (!string.IsNullOrWhiteSpace(dialogue.Original))
+            {
                 dialogueMap.TryAdd(dialogue.Original, dialogue.New);
+                if (dialogue.HasLogic)
+                {
+                    dialogueMap.TryAdd(dialogue.TextInIfOriginal, dialogue.TextInIf);
+                    dialogue.TextInIfOriginal = dialogue.TextInIf;
+                }
+                    
+            }
+                
         }
         return dialogueMap;
     }
